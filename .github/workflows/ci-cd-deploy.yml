@@ -1,0 +1,46 @@
+name: Deploy Website
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: docker build -t login-app .
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+
+          script: |
+            sudo dnf install git -y || true
+
+            if [ ! -d "/home/ec2-user/aws-practice" ]; then
+              git clone https://github.com/Tharun-Chennakki/aws-practice.git /home/ec2-user/aws-practice
+            fi
+
+            cd /home/ec2-user/aws-practice
+
+            git pull origin main
+
+            docker stop login-app || true
+            docker rm login-app || true
+
+            docker build -t login-app .
+
+            docker run -d \
+              --name login-app \
+              -p 80:80 \
+              login-app
