@@ -4,19 +4,12 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Build Docker Image
-        run: docker build -t login-app .
-
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
 
@@ -28,13 +21,11 @@ jobs:
           script: |
             sudo dnf install git -y || true
 
-            if [ ! -d "/home/ec2-user/aws-practice" ]; then
-              git clone https://github.com/Tharun-Chennakki/aws-practice.git /home/ec2-user/aws-practice
-            fi
+            rm -rf /home/ec2-user/aws-practice
 
-            cd /home/ec2-user/aws-practice
+            git clone https://github.com/Tharun-Chennakki/aws-practice.git
 
-            git pull origin main
+            cd aws-practice
 
             docker stop login-app || true
             docker rm login-app || true
@@ -45,3 +36,5 @@ jobs:
               --name login-app \
               -p 80:80 \
               login-app
+
+            docker ps
